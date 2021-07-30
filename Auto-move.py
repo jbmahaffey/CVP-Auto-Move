@@ -48,9 +48,7 @@ def Main():
     # Compare list of devices in CVP undefined container to list of approved devices defined in YAML file
     # If the the device is defined in the YAML file then provision it to the proper container
     for dev in data['all']:
-        if undefined == []:
-            break
-        elif dev['mac'] in undef:
+        if dev['mac'] in undef:
             device = clnt.api.get_device_by_mac(dev['mac'])
             try:
                 clnt.api.deploy_device(device=device, container=dev['container'], )
