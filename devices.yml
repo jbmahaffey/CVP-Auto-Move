@@ -1,0 +1,13 @@
+all:
+   - Leaf1: 
+     mac: '50:00:00:6b:2e:70'
+     container: 'test'
+     ip: '172.17.101.26'
+   - Leaf2:
+     mac: '50:00:00:d5:5d:c0'
+     container: 'test2'
+     ip: '192.168.200.3'
+   - Leaf3:
+     mac: '50:00:00:03:37:66'
+     container: test
+     ip: '192.168.200.4'
