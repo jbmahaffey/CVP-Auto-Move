@@ -55,7 +55,7 @@ def Main():
             except:
                 logging.error('Unable to deploy device.')
         else:
-            logging.info('device ' + str(undef) + ' not approved for deployment.')
+            logging.info('device ' + str(undef) + ' not approved for deployment or already provisioned.')
     
     # Run the task using the Execute function
     task = Execute(clnt, data)
