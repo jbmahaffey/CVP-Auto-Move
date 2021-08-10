@@ -1,13 +1,16 @@
 all:
-   - Leaf1: 
-     mac: '50:00:00:6b:2e:70'
+   - hostname: 'Leaf1'
+     mac: '50:00:00:d7:ee:0b'
      container: 'test'
-     ip: '172.17.101.26'
-   - Leaf2:
+     ip: '172.17.101.50'
+     mgmtgateway: '172.17.101.1'
+   - hostname: 'Leaf2'
      mac: '50:00:00:d5:5d:c0'
      container: 'test2'
      ip: '192.168.200.3'
-   - Leaf3:
+     mgmtgateway: '172.17.101.1'
+   - hostname: 'Leaf3'
      mac: '50:00:00:03:37:66'
      container: test
      ip: '192.168.200.4'
+     mgmtgateway: '172.17.101.1'

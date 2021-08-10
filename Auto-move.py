@@ -31,7 +31,7 @@ def Main():
     # Open YAML variable file
     with open(os.path.join(sys.path[0],args.devlist), 'r') as vars_:
         data = yaml.safe_load(vars_)
-
+    
     # CVPRAC connect to CVP
     clnt = CvpClient()
     try:
@@ -52,6 +52,7 @@ def Main():
             device = clnt.api.get_device_by_mac(dev['mac'])
             try:
                 clnt.api.deploy_device(device=device, container=dev['container'], )
+                con = Configlet(clnt, data)
             except:
                 logging.error('Unable to deploy device.')
         else:
@@ -59,6 +60,26 @@ def Main():
     
     # Run the task using the Execute function
     task = Execute(clnt, data)
+
+
+# Function to create configlet for management
+def Configlet(clnt, data):
+    l = []
+    config = clnt.api.get_configlets(start=0, end=0)
+    for configlet in config['data']:
+        l.append(configlet['name'])
+    
+    for device in data['all']:
+        if device['hostname'] + str('_mgmt') in l:
+            logging.info('Configlet ' + str(device['hostname'] + str('_mgmt')) + ' already exist')
+            return 'Done'
+        else:
+            try:
+                clnt.api.add_configlet(name=device['hostname'] + str('_mgmt'), config='hostname ' + str(device['hostname']) + '\ninterface management1\nip address ' + str(device['ip']) + '/24\nno shut\nip route 0.0.0.0/0 ' + str(device['mgmtgateway']))
+                return 'Done'
+            except:
+                logging.error('Unable to create configlet ' + str(device['hostname'] + '_mgmt'))
+
 
 # Function to run task if they are for the devices we provisioned
 def Execute(clnt, data):
