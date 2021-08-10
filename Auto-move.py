@@ -13,7 +13,7 @@ def Main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cvp', default='192.168.101.26', help='CVP Server IP')
     parser.add_argument('--username', default='cvpadmin', help='CVP username')
-    parser.add_argument('--password', default='$3cr3t$3cr3t', help='CVP password')
+    parser.add_argument('--password', default='', help='CVP password')
     parser.add_argument('--logging', default='', help='Logging levels info, error, or debug')
     parser.add_argument('--devlist', default='devices.yml', help='YAML file with list of approved devices.')
     args = parser.parse_args()
