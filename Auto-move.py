@@ -11,9 +11,9 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 def Main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cvp', default='', help='CVP Server IP')
-    parser.add_argument('--username', default='', help='CVP username')
-    parser.add_argument('--password', default='', help='CVP password')
+    parser.add_argument('--cvp', default='192.168.101.26', help='CVP Server IP')
+    parser.add_argument('--username', default='cvpadmin', help='CVP username')
+    parser.add_argument('--password', default='$3cr3t$3cr3t', help='CVP password')
     parser.add_argument('--logging', default='', help='Logging levels info, error, or debug')
     parser.add_argument('--devlist', default='devices.yml', help='YAML file with list of approved devices.')
     args = parser.parse_args()
@@ -47,19 +47,23 @@ def Main():
 
     # Compare list of devices in CVP undefined container to list of approved devices defined in YAML file
     # If the the device is defined in the YAML file then provision it to the proper container
+    tasks = []
     for dev in data['all']:
         if dev['mac'] in undef:
             device = clnt.api.get_device_by_mac(dev['mac'])
             try:
-                clnt.api.deploy_device(device=device, container=dev['container'], )
-                con = Configlet(clnt, data)
+                tsk = clnt.api.deploy_device(device=device, container=dev['container'])
+                tasks.append(tsk['data']['taskIds'])
+                con = Configlet(clnt, dev)
+                assign = AssignConfiglet(clnt, dev, con)
+                tasks.append(assign['data']['taskIds'])
             except:
                 logging.error('Unable to deploy device.')
         else:
             logging.info('device ' + str(undef) + ' not approved for deployment or already provisioned.')
     
     # Run the task using the Execute function
-    task = Execute(clnt, data)
+    Execute(clnt, tasks)
 
 
 # Function to create configlet for management
@@ -69,30 +73,31 @@ def Configlet(clnt, data):
     for configlet in config['data']:
         l.append(configlet['name'])
     
-    for device in data['all']:
-        if device['hostname'] + str('_mgmt') in l:
-            logging.info('Configlet ' + str(device['hostname'] + str('_mgmt')) + ' already exist')
-            return 'Done'
-        else:
-            try:
-                clnt.api.add_configlet(name=device['hostname'] + str('_mgmt'), config='hostname ' + str(device['hostname']) + '\ninterface management1\nip address ' + str(device['ip']) + '/24\nno shut\nip route 0.0.0.0/0 ' + str(device['mgmtgateway']))
-                return 'Done'
-            except:
-                logging.error('Unable to create configlet ' + str(device['hostname'] + '_mgmt'))
+    if data['hostname'] + str('_mgmt') in l:
+        logging.info('Configlet ' + str(data['hostname'] + str('_mgmt')) + ' already exist')
+    else:
+        try:
+            cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config='hostname ' + str(data['hostname']) + '\ninterface management1\nip address ' + str(data['ip']) + '/24\nno shut\nip route 0.0.0.0/0 ' + str(data['mgmtgateway']) + '\ndaemon TerminAttr\nexec /usr/bin/TerminAttr -ingestgrpcurl=192.168.101.26:9910 -cvcompression=gzip -ingestauth=key,arista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default -taillogs\nno shut')
+            return cfglt
+        except:
+            logging.error('Unable to create configlet ' + str(data['hostname'] + '_mgmt'))
+
+
+# function to assign configlet to new device
+def AssignConfiglet(clnt, dev, con):
+    device = clnt.api.get_device_by_mac(dev['mac'])
+    cfglets = [{'name': dev['hostname'] + '_mgmt', 'key': con}]
+    task = clnt.api.apply_configlets_to_device(app_name='mgmt_configlet', dev=device, new_configlets=cfglets)
+    return task
 
 
 # Function to run task if they are for the devices we provisioned
-def Execute(clnt, data):
-    t = clnt.api.get_tasks()
-    approved = []
-    for device in data['all']:
-        approved.append(device['mac'])    
-    
-    for task in t['data']:
-        if task['data']['NETELEMENT_ID'] in approved and task['workOrderUserDefinedStatus'] == 'Pending':
-            clnt.api.execute_task(task['workOrderId'])
-        else:
-            logging.info('Task ID ' + str(task['workOrderId']) + ' is ' + str(task['workOrderUserDefinedStatus']) + '.')
+def Execute(clnt, tasks):
+    for task in tasks:
+        try:
+            clnt.api.execute_task(task_id=task[0])
+        except:
+            logging.info('Task ID ' + str(task) + ' is ' + ' failed to execute.')
     
 
 if __name__ == '__main__':
