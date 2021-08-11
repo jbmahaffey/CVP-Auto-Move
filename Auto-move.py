@@ -80,7 +80,7 @@ def Configlet(clnt, data):
         l.append(configlet['name'])
     
     if data['hostname'] + str('_mgmt') in l:
-        logging.info('Configlet ' + str(data['hostname'] + str('_mgmt')) + ' already exist')
+        logging.info('Configlet ' + str(data['hostname'] + '_mgmt') + ' already exist')
     else:
         try:
             cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config='hostname ' + str(data['hostname']) + '\ninterface management1\nip address ' + str(data['ip']) + '/24\nno shut\nip route 0.0.0.0/0 ' + str(data['mgmtgateway']) + '\ndaemon TerminAttr\nexec /usr/bin/TerminAttr -ingestgrpcurl=192.168.101.26:9910 -cvcompression=gzip -ingestauth=key,arista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default -taillogs\nno shut')
