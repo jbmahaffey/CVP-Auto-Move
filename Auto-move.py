@@ -57,10 +57,10 @@ def Main():
                 con = Configlet(clnt, dev)
                 if con != None:
                     assign = AssignConfiglet(clnt, dev, con)
-                else:
-                    ()
-                if assign['data']['taskIds'] not in tasks:
-                    tasks.append(assign['data']['taskIds'])
+                    if assign['data']['taskIds'] not in tasks:
+                        tasks.append(assign['data']['taskIds'])
+                    else:
+                        ()
                 else:
                     ()
             except:
