@@ -55,8 +55,14 @@ def Main():
                 tsk = clnt.api.deploy_device(device=device, container=dev['container'])
                 tasks.append(tsk['data']['taskIds'])
                 con = Configlet(clnt, dev)
-                assign = AssignConfiglet(clnt, dev, con)
-                tasks.append(assign['data']['taskIds'])
+                if con != None:
+                    assign = AssignConfiglet(clnt, dev, con)
+                else:
+                    ()
+                if assign['data']['taskIds'] not in tasks:
+                    tasks.append(assign['data']['taskIds'])
+                else:
+                    ()
             except:
                 logging.error('Unable to deploy device.')
         else:
