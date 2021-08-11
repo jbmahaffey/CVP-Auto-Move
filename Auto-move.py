@@ -60,9 +60,9 @@ def Main():
                     if assign['data']['taskIds'] not in tasks:
                         tasks.append(assign['data']['taskIds'])
                     else:
-                        ()
+                        logging.info('Task already exist.')
                 else:
-                    ()
+                    logging.info('Configlet already exist.')
             except:
                 logging.error('Unable to deploy device.')
         else:
