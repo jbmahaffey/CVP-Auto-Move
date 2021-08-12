@@ -16,7 +16,7 @@ def Main():
     parser.add_argument('--username', default='cvpadmin', help='CVP username')
     parser.add_argument('--password', default='', help='CVP password')
     parser.add_argument('--logging', default='', help='Logging levels info, error, or debug')
-    parser.add_argument('--devlist', default='devices.yml', help='YAML file with list of approved devices.')
+    parser.add_argument('--devlist', default='devices.csv', help='YAML file with list of approved devices.')
     args = parser.parse_args()
 
     # Only enable logging when necessary
@@ -40,7 +40,6 @@ def Main():
             for line in csv.DictReader(vars_):
                 devices.append(line)
         data = {'all': devices}
-        print(data)
     else:
         logging.info('Please enter a valid file type.')
 
@@ -95,7 +94,9 @@ def Configlet(clnt, data):
         logging.info('Configlet ' + str(data['hostname'] + '_mgmt') + ' already exist')
     else:
         try:
-            cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config='hostname ' + str(data['hostname']) + '\ninterface management1\nip address ' + str(data['ip']) + '/24\nno shut\nip route 0.0.0.0/0 ' + str(data['mgmtgateway']) + '\ndaemon TerminAttr\nexec /usr/bin/TerminAttr -ingestgrpcurl=192.168.101.26:9910 -cvcompression=gzip -ingestauth=key,arista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default -taillogs\nno shut')
+            cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config='hostname ' + str(data['hostname']) + '\ninterface management1\nip address ' + 
+                                            str(data['ip']) + '/24\nno shut\nip route 0.0.0.0/0 ' + str(data['mgmtgateway']) + 
+                                            '\ndaemon TerminAttr\nexec /usr/bin/TerminAttr -ingestgrpcurl=192.168.101.26:9910 -cvcompression=gzip -ingestauth=key,arista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default -taillogs\nno shut')
             return cfglt
         except:
             logging.error('Unable to create configlet ' + str(data['hostname'] + '_mgmt'))
