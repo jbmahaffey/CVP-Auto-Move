@@ -28,6 +28,7 @@ def Main():
         logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',filename='cvpmove.log', level=formattedlevel, datefmt='%Y-%m-%d %H:%M:%S')
     else:
         ()
+        
     # Open variable file either csv or yaml
     filetype = args.devlist.split('.')
     if filetype[1] == 'yml':
