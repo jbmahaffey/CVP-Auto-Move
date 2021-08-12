@@ -52,7 +52,11 @@ def Main():
         logging.error('Unable to login to Cloudvision')
 
     # Get devices from Undefined container in CVP and add their MAC to a list
-    undefined = clnt.api.get_devices_in_container('Undefined')
+    try:
+        undefined = clnt.api.get_devices_in_container('Undefined')
+    except:
+        logging.error('Unable to get devices from CVP.')
+
     undef = []
     for unprov in undefined:
         undef.append(unprov['systemMacAddress'])
@@ -87,7 +91,11 @@ def Main():
 # Function to create configlet for management
 def Configlet(clnt, data):
     l = []
-    config = clnt.api.get_configlets(start=0, end=0)
+    try:
+        config = clnt.api.get_configlets(start=0, end=0)
+    except:
+        logging.error('Unable to get list of configlets.')
+        
     for configlet in config['data']:
         l.append(configlet['name'])
     
@@ -105,10 +113,16 @@ def Configlet(clnt, data):
 
 # function to assign configlet to new device
 def AssignConfiglet(clnt, dev, con):
-    device = clnt.api.get_device_by_mac(dev['mac'])
+    try:
+        device = clnt.api.get_device_by_mac(dev['mac'])
+    except:
+        logging.error('Unable to get device information from CVP')
     cfglets = [{'name': dev['hostname'] + '_mgmt', 'key': con}]
-    task = clnt.api.apply_configlets_to_device(app_name='mgmt_configlet', dev=device, new_configlets=cfglets)
-    return task
+    try:
+        task = clnt.api.apply_configlets_to_device(app_name='mgmt_configlet', dev=device, new_configlets=cfglets)
+        return task
+    except:
+        logging.error('Error applying configlet to device.')
 
 
 # Function to run task if they are for the devices we provisioned
