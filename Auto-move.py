@@ -14,7 +14,7 @@ def Main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cvp', default='192.168.101.26', help='CVP Server IP')
     parser.add_argument('--username', default='cvpadmin', help='CVP username')
-    parser.add_argument('--password', default='', help='CVP password')
+    parser.add_argument('--password', default='', help='Cloudvision password')
     parser.add_argument('--logging', default='', help='Logging levels info, error, or debug')
     parser.add_argument('--devlist', default='devices.csv', help='YAML/CSV file with list of approved devices.')
     args = parser.parse_args()
@@ -55,7 +55,7 @@ def Main():
     try:
         undefined = clnt.api.get_devices_in_container('Undefined')
     except:
-        logging.error('Unable to get devices from CVP.')
+        logging.error('Unable to get devices from Cloudvision.')
 
     undef = []
     for unprov in undefined:
@@ -95,7 +95,7 @@ def Configlet(clnt, data):
         config = clnt.api.get_configlets(start=0, end=0)
     except:
         logging.error('Unable to get list of configlets.')
-        
+
     for configlet in config['data']:
         l.append(configlet['name'])
     
@@ -116,7 +116,7 @@ def AssignConfiglet(clnt, dev, con):
     try:
         device = clnt.api.get_device_by_mac(dev['mac'])
     except:
-        logging.error('Unable to get device information from CVP')
+        logging.error('Unable to get device information from Cloudvision')
     cfglets = [{'name': dev['hostname'] + '_mgmt', 'key': con}]
     try:
         task = clnt.api.apply_configlets_to_device(app_name='mgmt_configlet', dev=device, new_configlets=cfglets)
