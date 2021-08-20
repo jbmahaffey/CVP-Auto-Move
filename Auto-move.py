@@ -3,6 +3,7 @@
 import sys
 import csv
 import os
+import requests
 import yaml
 from cvprac.cvp_client import CvpClient
 import argparse
@@ -69,30 +70,31 @@ def Main():
             device = clnt.api.get_device_by_mac(dev['mac'])
             try:
                 tsk = clnt.api.deploy_device(device=device, container=dev['container'])
-                tasks.append(tsk['data']['taskIds'])
-                con = Configlet(clnt, dev)
-                if con != None:
+                Execute(clnt, tsk['data']['taskIds'])
+                con = Configlet(clnt, dev, args.cvp, args.username, args.password)
+                if con != None and con != 'reconcile':
                     assign = AssignConfiglet(clnt, dev, con)
-                    if assign['data']['taskIds'] not in tasks:
-                        tasks.append(assign['data']['taskIds'])
-                    else:
-                        logging.info('Task already exist.')
+                    Execute(clnt, assign['data']['taskIds'])
+                elif con == 'reconcile':
+                    cfglets = Containercfg(clnt, dev)
+                    Execute(clnt, cfglets['data']['taskIds'])
                 else:
                     logging.info('Configlet already exist.')
             except:
                 logging.error('Unable to deploy device.')
         else:
             logging.info('device ' + str(undef) + ' not approved for deployment or already provisioned.')
-    
+
     # Run the task using the Execute function
     Execute(clnt, tasks)
 
 
 # Function to create configlet for management
-def Configlet(clnt, data):
+def Configlet(clnt, data, cvp, user, password):
     l = []
     try:
         config = clnt.api.get_configlets(start=0, end=0)
+        ztp = clnt.api.get_device_by_mac(data['mac'])
     except:
         logging.error('Unable to get list of configlets.')
 
@@ -101,7 +103,7 @@ def Configlet(clnt, data):
     
     if data['hostname'] + str('_mgmt') in l:
         logging.info('Configlet ' + str(data['hostname'] + '_mgmt') + ' already exist')
-    else:
+    elif ztp['ztpMode'] == 'true':
         try:
             cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config='hostname ' + str(data['hostname']) + '\ninterface management1\nip address ' + 
                                             str(data['ip']) + '/24\nno shut\nip route 0.0.0.0/0 ' + str(data['mgmtgateway']) + 
@@ -109,6 +111,21 @@ def Configlet(clnt, data):
             return cfglt
         except:
             logging.error('Unable to create configlet ' + str(data['hostname'] + '_mgmt'))
+    else:
+        try:
+            container = clnt.api.get_container_by_name(name=data['container'])
+            ckey = container['key']
+            login = 'https://{server}/cvpservice/login/authenticate.do'.format(server=cvp)
+            resp = requests.post(login, headers={'content-type': 'application/json'}, json={'userId': user, 'password': password}, verify=False)
+            jresp = resp.json()
+            token = jresp['cookie']['Value']
+            url = 'https://{server}/cvpservice/provisioning/containerLevelReconcile.do?containerId={container}&reconcileAll=false'.format(server=cvp, container=ckey)
+            response = requests.get(url, auth=(user, password), headers={'Cookie': 'access_token=' + str(token)}, verify=False)
+            if response.status_code == 200:
+                reconcile = 'reconcile'
+            return reconcile
+        except:
+            logging.error('Unable to reconcile container.')
 
 
 # function to assign configlet to new device
@@ -125,11 +142,21 @@ def AssignConfiglet(clnt, dev, con):
         logging.error('Error applying configlet to device.')
 
 
+def Containercfg(clnt, data):
+    cfglets = clnt.api.get_configlets_by_device_id(data['mac'])
+    cfglist = []
+    for configlet in cfglets:
+        cfglist.append({'name': configlet['name'], 'key': configlet['key']})
+    device = clnt.api.get_device_by_mac(data['mac'])
+    task = clnt.api.apply_configlets_to_device(app_name='container_configlet', dev=device, new_configlets=cfglist)
+    return task
+
+
 # Function to run task if they are for the devices we provisioned
 def Execute(clnt, tasks):
     for task in tasks:
         try:
-            clnt.api.execute_task(task_id=task[0])
+            clnt.api.execute_task(task_id=task)
         except:
             logging.info('Task ID ' + str(task) + ' is ' + ' failed to execute.')
     
