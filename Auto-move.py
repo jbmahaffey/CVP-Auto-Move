@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import csv
 import os
 import requests
 import yaml
@@ -14,13 +15,9 @@ def Main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cvp', default='192.168.101.26', help='CVP Server IP')
     parser.add_argument('--username', default='cvpadmin', help='CVP username')
-<<<<<<< Updated upstream
-    parser.add_argument('--password', default='', help='CVP password')
-=======
-    parser.add_argument('--password', default='$3cr3t$3cr3t', help='Cloudvision password')
->>>>>>> Stashed changes
+    parser.add_argument('--password', default='', help='Cloudvision password')
     parser.add_argument('--logging', default='', help='Logging levels info, error, or debug')
-    parser.add_argument('--devlist', default='devices.yml', help='YAML file with list of approved devices.')
+    parser.add_argument('--devlist', default='devices.csv', help='YAML/CSV file with list of approved devices.')
     args = parser.parse_args()
 
     # Only enable logging when necessary
@@ -32,11 +29,22 @@ def Main():
         logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',filename='cvpmove.log', level=formattedlevel, datefmt='%Y-%m-%d %H:%M:%S')
     else:
         ()
+        
+    # Open variable file either csv or yaml
+    filetype = args.devlist.split('.')
+    if filetype[1] == 'yml':
+        # Open YAML variable file
+        with open(os.path.join(sys.path[0],args.devlist), 'r') as vars_:
+            data = yaml.safe_load(vars_)
+    elif filetype[1] == 'csv':
+        devices = []
+        with open(os.path.join(sys.path[0],args.devlist), 'r') as vars_:
+            for line in csv.DictReader(vars_):
+                devices.append(line)
+        data = {'all': devices}
+    else:
+        logging.info('Please enter a valid file type.')
 
-    # Open YAML variable file
-    with open(os.path.join(sys.path[0],args.devlist), 'r') as vars_:
-        data = yaml.safe_load(vars_)
-    
     # CVPRAC connect to CVP
     clnt = CvpClient()
     try:
@@ -45,7 +53,11 @@ def Main():
         logging.error('Unable to login to Cloudvision')
 
     # Get devices from Undefined container in CVP and add their MAC to a list
-    undefined = clnt.api.get_devices_in_container('Undefined')
+    try:
+        undefined = clnt.api.get_devices_in_container('Undefined')
+    except:
+        logging.error('Unable to get devices from Cloudvision.')
+
     undef = []
     for unprov in undefined:
         undef.append(unprov['systemMacAddress'])
@@ -80,16 +92,12 @@ def Main():
 # Function to create configlet for management
 def Configlet(clnt, data, cvp, user, password):
     l = []
-<<<<<<< Updated upstream
-    config = clnt.api.get_configlets(start=0, end=0)
-=======
     try:
         config = clnt.api.get_configlets(start=0, end=0)
         ztp = clnt.api.get_device_by_mac(data['mac'])
     except:
         logging.error('Unable to get list of configlets.')
 
->>>>>>> Stashed changes
     for configlet in config['data']:
         l.append(configlet['name'])
     
@@ -97,7 +105,9 @@ def Configlet(clnt, data, cvp, user, password):
         logging.info('Configlet ' + str(data['hostname'] + '_mgmt') + ' already exist')
     elif ztp['ztpMode'] == 'true':
         try:
-            cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config='hostname ' + str(data['hostname']) + '\ninterface management1\nip address ' + str(data['ip']) + '/24\nno shut\nip route 0.0.0.0/0 ' + str(data['mgmtgateway']) + '\ndaemon TerminAttr\nexec /usr/bin/TerminAttr -ingestgrpcurl=192.168.101.26:9910 -cvcompression=gzip -ingestauth=key,arista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default -taillogs\nno shut')
+            cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config='hostname ' + str(data['hostname']) + '\ninterface management1\nip address ' + 
+                                            str(data['ip']) + '/24\nno shut\nip route 0.0.0.0/0 ' + str(data['mgmtgateway']) + 
+                                            '\ndaemon TerminAttr\nexec /usr/bin/TerminAttr -ingestgrpcurl=192.168.101.26:9910 -cvcompression=gzip -ingestauth=key,arista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default -taillogs\nno shut')
             return cfglt
         except:
             logging.error('Unable to create configlet ' + str(data['hostname'] + '_mgmt'))
@@ -120,10 +130,16 @@ def Configlet(clnt, data, cvp, user, password):
 
 # function to assign configlet to new device
 def AssignConfiglet(clnt, dev, con):
-    device = clnt.api.get_device_by_mac(dev['mac'])
+    try:
+        device = clnt.api.get_device_by_mac(dev['mac'])
+    except:
+        logging.error('Unable to get device information from Cloudvision')
     cfglets = [{'name': dev['hostname'] + '_mgmt', 'key': con}]
-    task = clnt.api.apply_configlets_to_device(app_name='mgmt_configlet', dev=device, new_configlets=cfglets)
-    return task
+    try:
+        task = clnt.api.apply_configlets_to_device(app_name='mgmt_configlet', dev=device, new_configlets=cfglets)
+        return task
+    except:
+        logging.error('Error applying configlet to device.')
 
 
 def Containercfg(clnt, data):

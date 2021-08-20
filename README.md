@@ -1,4 +1,4 @@
-# Route_Check
+# CVP Auto Move Container
 
 The setup.sh script will install the required python3 modules as defined in the requirements.txt document.  Please run this script first to ensure that all required modules are installed.
 
@@ -14,4 +14,4 @@ List of available switches when running the script are below:
         * --username username                  (Device Username)
         * --password password                  (Device Password)
         * --logging                            (Enable logging and set the leve to info, error, or debug)
-        * --devlist                            (Filename of the YAML file with the approved devices)
+        * --devlist                            (Filename of the YAML or CSV file with the approved devices)
