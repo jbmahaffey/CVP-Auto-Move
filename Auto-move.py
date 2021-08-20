@@ -79,14 +79,11 @@ def Main():
                     cfglets = Containercfg(clnt, dev)
                     Execute(clnt, cfglets['data']['taskIds'])
                 else:
-                    logging.info('Configlet already exist.')
+                    ()
             except:
                 logging.error('Unable to deploy device.')
         else:
             logging.info('device ' + str(undef) + ' not approved for deployment or already provisioned.')
-
-    # Run the task using the Execute function
-    Execute(clnt, tasks)
 
 
 # Function to create configlet for management
