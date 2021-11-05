@@ -87,6 +87,9 @@ def Main():
 
 # Function to create configlet for management
 def Configlet(clnt, data, cvp, user, password):
+    THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+    j2_env = Environment(loader=FileSystemLoader(THIS_DIR),
+                         trim_blocks=True)
     l = []
     try:
         config = clnt.api.get_configlets(start=0, end=0)
@@ -101,9 +104,16 @@ def Configlet(clnt, data, cvp, user, password):
         logging.info('Configlet ' + str(data['hostname'] + '_mgmt') + ' already exist')
     elif ztp['ztpMode'] == 'true':
         try:
-            cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config='hostname ' + str(data['hostname']) + '\ninterface management1\nip address ' + 
-                                            str(data['ip']) + '/24\nno shut\nip route 0.0.0.0/0 ' + str(data['mgmtgateway']) + 
-                                            '\ndaemon TerminAttr\nexec /usr/bin/TerminAttr -ingestgrpcurl=192.168.101.26:9910 -cvcompression=gzip -ingestauth=key,arista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default -taillogs\nno shut')
+            if data['nettype'] == 'leaf':
+                data = j2_env.get_template('leaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+            elif data['nettype'] == 'spine':
+                data = j2_env.get_template('spine.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+            elif data['nettype'] == 'borderleaf' or 'border leaf':
+                data = j2_env.get_template('borderleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+            elif data['nettype'] == 'serviceleaf' or 'service leaf':
+                data = j2_env.get_template('serviceleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+
+            cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config=data)
             return cfglt
         except:
             logging.error('Unable to create configlet ' + str(data['hostname'] + '_mgmt'))

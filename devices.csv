@@ -1,4 +1,4 @@
-hostname,mac,container,ip,mgmtgateway
-Leaf1,50:00:00:d7:ee:0b,test,172.17.101.50,172.17.101.1
-Leaf2,50:00:00:cb:38:c2,test2,172.17.101.51,172.17.101.1
-Leaf3,50:00:00:d5:5d:c0,test,172.17.101.52,172.17.101.1
+hostname,mac,container,mgmtip,mgmtint,mgmtgateway,nettype,p2pint,p2pip,p2pmask,loopback
+Leaf1,50:00:00:d7:ee:0b,test,172.17.101.50,1,172.17.101.1,leaf,eth1,192.168.101.1,31,lo0
+Leaf2,50:00:00:cb:38:c2,test2,172.17.101.51,1,172.17.101.1,leaf,eth1,192.168.101.3,31,lo0
+Leaf3,50:00:00:d5:5d:c0,test,172.17.101.52,1,172.17.101.1,leaf,eth1,192.168.101.5,31,lo1
