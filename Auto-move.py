@@ -106,15 +106,15 @@ def Configlet(clnt, data, cvp, user, password):
     elif ztp['ztpMode'] == 'true':
         try:
             if data['nettype'] == 'leaf':
-                data = j2_env.get_template('leaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+                conf = j2_env.get_template('leaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
             elif data['nettype'] == 'spine':
-                data = j2_env.get_template('spine.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+                conf = j2_env.get_template('spine.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
             elif data['nettype'] == 'borderleaf' or 'border leaf':
-                data = j2_env.get_template('borderleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+                conf = j2_env.get_template('borderleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
             elif data['nettype'] == 'serviceleaf' or 'service leaf':
-                data = j2_env.get_template('serviceleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+                conf = j2_env.get_template('serviceleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
 
-            cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config=data)
+            cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config=conf)
             return cfglt
         except:
             logging.error('Unable to create configlet ' + str(data['hostname'] + '_mgmt'))
