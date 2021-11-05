@@ -117,6 +117,7 @@ def Configlet(clnt, data, cvp, user, password):
         except:
             logging.error('Unable to render template')
         
+        #Push configlet to CVP
         try:
             cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config=conf)
             return cfglt
