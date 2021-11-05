@@ -104,6 +104,7 @@ def Configlet(clnt, data, cvp, user, password):
     if data['hostname'] + str('_mgmt') in l:
         logging.info('Configlet ' + str(data['hostname'] + '_mgmt') + ' already exist')
     elif ztp['ztpMode'] == 'true':
+        #Render configuration template to push to cvp as a configlet
         try:
             if data['nettype'] == 'leaf':
                 conf = j2_env.get_template('leaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
@@ -113,7 +114,10 @@ def Configlet(clnt, data, cvp, user, password):
                 conf = j2_env.get_template('borderleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
             elif data['nettype'] == 'serviceleaf' or 'service leaf':
                 conf = j2_env.get_template('serviceleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
-
+        except:
+            logging.error('Unable to render template')
+        
+        try:
             cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config=conf)
             return cfglt
         except:
