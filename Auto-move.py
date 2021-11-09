@@ -14,9 +14,9 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 def Main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cvp', default='192.168.101.26', help='CVP Server IP')
+    parser.add_argument('--cvp', default='192.168.101.35', help='CVP Server IP')
     parser.add_argument('--username', default='cvpadmin', help='CVP username')
-    parser.add_argument('--password', default='', help='Cloudvision password')
+    parser.add_argument('--password', default='password123', help='Cloudvision password')
     parser.add_argument('--logging', default='', help='Logging levels info, error, or debug')
     parser.add_argument('--devlist', default='devices.csv', help='YAML/CSV file with list of approved devices.')
     args = parser.parse_args()
@@ -107,13 +107,13 @@ def Configlet(clnt, data, cvp, user, password):
         #Render configuration template to push to cvp as a configlet
         try:
             if data['nettype'] == 'leaf':
-                conf = j2_env.get_template('leaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+                conf = j2_env.get_template('leaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
             elif data['nettype'] == 'spine':
-                conf = j2_env.get_template('spine.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+                conf = j2_env.get_template('spine.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
             elif data['nettype'] == 'borderleaf' or 'border leaf':
-                conf = j2_env.get_template('borderleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+                conf = j2_env.get_template('borderleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
             elif data['nettype'] == 'serviceleaf' or 'service leaf':
-                conf = j2_env.get_template('serviceleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'])
+                conf = j2_env.get_template('serviceleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
         except:
             logging.error('Unable to render template')
         

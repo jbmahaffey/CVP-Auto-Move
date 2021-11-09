@@ -6,5 +6,5 @@ interface {{mgmtint}}
 ip route 0.0.0.0/0 {{mgmtgateway}}
 
 daemon TerminAttr
-    exec /usr/bin/TerminAttr -ingestgrpcurl=192.168.101.26:9910 -cvcompression=gzip -ingestauth=key,arista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default -taillogs
+    exec /usr/bin/TerminAttr -ingestgrpcurl={{cvp}}:9910 -cvcompression=gzip -ingestauth=key,arista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default -taillogs
     no shut
