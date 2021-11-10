@@ -19,6 +19,7 @@ def Main():
     parser.add_argument('--password', default='password123', help='Cloudvision password')
     parser.add_argument('--logging', default='', help='Logging levels info, error, or debug')
     parser.add_argument('--devlist', default='devices.csv', help='YAML/CSV file with list of approved devices.')
+    parser.add_argument('--template', default='jinja', help='Template format, either Jinja or plain text.')
     args = parser.parse_args()
 
     # Only enable logging when necessary
@@ -71,7 +72,7 @@ def Main():
             try:
                 tsk = clnt.api.deploy_device(device=device, container=dev['container'])
                 Execute(clnt, tsk['data']['taskIds'])
-                con = Configlet(clnt, dev, args.cvp, args.username, args.password)
+                con = Configlet(clnt, dev, args.cvp, args.username, args.password, args.template)
                 if con != None and con != 'reconcile':
                     assign = AssignConfiglet(clnt, dev, con)
                     Execute(clnt, assign['data']['taskIds'])
@@ -87,10 +88,7 @@ def Main():
 
 
 # Function to create configlet for management
-def Configlet(clnt, data, cvp, user, password):
-    THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-    j2_env = Environment(loader=FileSystemLoader(THIS_DIR),
-                         trim_blocks=True)
+def Configlet(clnt, data, cvp, user, password, template):
     l = []
     try:
         config = clnt.api.get_configlets(start=0, end=0)
@@ -103,17 +101,47 @@ def Configlet(clnt, data, cvp, user, password):
     
     if data['hostname'] + str('_mgmt') in l:
         logging.info('Configlet ' + str(data['hostname'] + '_mgmt') + ' already exist')
-    elif ztp['ztpMode'] == 'true':
+    elif ztp['ztpMode'] == 'true' or data['ztp'] == 'true':
         #Render configuration template to push to cvp as a configlet
         try:
-            if data['nettype'] == 'leaf':
-                conf = j2_env.get_template('leaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
-            elif data['nettype'] == 'spine':
-                conf = j2_env.get_template('spine.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
-            elif data['nettype'] == 'borderleaf' or 'border leaf':
-                conf = j2_env.get_template('borderleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
-            elif data['nettype'] == 'serviceleaf' or 'service leaf':
-                conf = j2_env.get_template('serviceleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+            if template == 'jinja':
+                THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+                j2_env = Environment(loader=FileSystemLoader(THIS_DIR),
+                         trim_blocks=True)
+                if data['nettype'] == 'leaf':
+                    conf = j2_env.get_template('leaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+                elif data['nettype'] == 'spine':
+                    conf = j2_env.get_template('spine.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+                elif data['nettype'] == 'borderleaf' or 'border leaf':
+                    conf = j2_env.get_template('borderleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+                elif data['nettype'] == 'serviceleaf' or 'service leaf':
+                    conf = j2_env.get_template('serviceleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+            #Plain text file templates find and replace.  Not the prefered method but an option.
+            elif template == 'text' or template == 'txt':
+                if data['nettype'] == 'leaf':
+                    replace = {'*hostname*': data['hostname'], '*mgmtint*': data['mgmtint'], '*mgmtgateway*': data['mgmtgateway'], '*cvp*': cvp}
+                    with open(os.path.join(sys.path[0],'leaf.txt'), 'r') as file :
+                        conf = file.read()
+                    for k, v in iter(replace.items()):
+                        conf = filedat.replace(k, v)
+                elif data['nettype'] == 'spine':
+                    replace = {'*hostname*': data['hostname'], '*mgmtint*': data['mgmtint'], '*mgmtgateway*': data['mgmtgateway'], '*cvp*': cvp}
+                    with open(os.path.join(sys.path[0],'spine.txt'), 'r') as file :
+                        conf = file.read()
+                    for k, v in iter(replace.items()):
+                        conf = filedat.replace(k, v)
+                elif data['nettype'] == 'borderleaf' or 'border leaf':
+                    replace = {'*hostname*': data['hostname'], '*mgmtint*': data['mgmtint'], '*mgmtgateway*': data['mgmtgateway'], '*cvp*': cvp}
+                    with open(os.path.join(sys.path[0],'borderleaf.txt'), 'r') as file :
+                        conf = file.read()
+                    for k, v in iter(replace.items()):
+                        conf = filedat.replace(k, v)
+                elif data['nettype'] == 'serviceleaf' or 'service leaf':
+                    replace = {'*hostname*': data['hostname'], '*mgmtint*': data['mgmtint'], '*mgmtgateway*': data['mgmtgateway'], '*cvp*': cvp}
+                    with open(os.path.join(sys.path[0],'serviceleaf.txt'), 'r') as file :
+                        conf = file.read()
+                    for k, v in iter(replace.items()):
+                        conf = filedat.replace(k, v)
         except:
             logging.error('Unable to render template')
         
