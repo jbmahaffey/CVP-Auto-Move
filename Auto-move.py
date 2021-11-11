@@ -119,24 +119,28 @@ def Configlet(clnt, data, cvp, user, password, template):
             #Plain text file templates find and replace.  Not the prefered method but an option.
             elif template == 'text' or template == 'txt':
                 if data['nettype'] == 'leaf':
+                    #Dictionary of words to replace and what to replace them with
                     replace = {'*hostname*': data['hostname'], '*mgmtint*': data['mgmtint'], '*mgmtgateway*': data['mgmtgateway'], '*cvp*': cvp}
                     with open(os.path.join(sys.path[0],'leaf.txt'), 'r') as file :
                         conf = file.read()
                     for k, v in iter(replace.items()):
                         conf = filedat.replace(k, v)
                 elif data['nettype'] == 'spine':
+                    #Dictionary of words to replace and what to replace them with
                     replace = {'*hostname*': data['hostname'], '*mgmtint*': data['mgmtint'], '*mgmtgateway*': data['mgmtgateway'], '*cvp*': cvp}
                     with open(os.path.join(sys.path[0],'spine.txt'), 'r') as file :
                         conf = file.read()
                     for k, v in iter(replace.items()):
                         conf = filedat.replace(k, v)
                 elif data['nettype'] == 'borderleaf' or 'border leaf':
+                    #Dictionary of words to replace and what to replace them with
                     replace = {'*hostname*': data['hostname'], '*mgmtint*': data['mgmtint'], '*mgmtgateway*': data['mgmtgateway'], '*cvp*': cvp}
                     with open(os.path.join(sys.path[0],'borderleaf.txt'), 'r') as file :
                         conf = file.read()
                     for k, v in iter(replace.items()):
                         conf = filedat.replace(k, v)
                 elif data['nettype'] == 'serviceleaf' or 'service leaf':
+                    #Dictionary of words to replace and what to replace them with
                     replace = {'*hostname*': data['hostname'], '*mgmtint*': data['mgmtint'], '*mgmtgateway*': data['mgmtgateway'], '*cvp*': cvp}
                     with open(os.path.join(sys.path[0],'serviceleaf.txt'), 'r') as file :
                         conf = file.read()
