@@ -34,16 +34,19 @@ def Main():
         
     # Open variable file either csv or yaml
     filetype = args.devlist.split('.')
+    
     if filetype[1] == 'yml':
         # Open YAML variable file
         with open(os.path.join(sys.path[0],args.devlist), 'r') as vars_:
             data = yaml.safe_load(vars_)
+    
     elif filetype[1] == 'csv':
         devices = []
         with open(os.path.join(sys.path[0],args.devlist), 'r') as vars_:
             for line in csv.DictReader(vars_):
                 devices.append(line)
         data = {'all': devices}
+    
     else:
         logging.info('Please enter a valid file type.')
 
@@ -73,9 +76,11 @@ def Main():
                 tsk = clnt.api.deploy_device(device=device, container=dev['container'])
                 Execute(clnt, tsk['data']['taskIds'])
                 con = Configlet(clnt, dev, args.cvp, args.username, args.password, args.template)
+                
                 if con != None and con != 'reconcile':
                     assign = AssignConfiglet(clnt, dev, con)
                     Execute(clnt, assign['data']['taskIds'])
+                
                 elif con == 'reconcile':
                     cfglets = Containercfg(clnt, dev)
                     Execute(clnt, cfglets['data']['taskIds'])
@@ -110,12 +115,16 @@ def Configlet(clnt, data, cvp, user, password, template):
                          trim_blocks=True)
                 if data['nettype'] == 'leaf':
                     conf = j2_env.get_template('leaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+                
                 elif data['nettype'] == 'spine':
                     conf = j2_env.get_template('spine.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+                
                 elif data['nettype'] == 'borderleaf' or 'border leaf':
                     conf = j2_env.get_template('borderleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+                
                 elif data['nettype'] == 'serviceleaf' or 'service leaf':
                     conf = j2_env.get_template('serviceleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+            
             #Plain text file templates find and replace.  Not the prefered method but an option.
             elif template == 'text' or template == 'txt':
                 if data['nettype'] == 'leaf':
@@ -125,6 +134,7 @@ def Configlet(clnt, data, cvp, user, password, template):
                         conf = file.read()
                     for k, v in iter(replace.items()):
                         conf = filedat.replace(k, v)
+                
                 elif data['nettype'] == 'spine':
                     #Dictionary of words to replace and what to replace them with
                     replace = {'*hostname*': data['hostname'], '*mgmtint*': data['mgmtint'], '*mgmtgateway*': data['mgmtgateway'], '*cvp*': cvp}
@@ -132,6 +142,7 @@ def Configlet(clnt, data, cvp, user, password, template):
                         conf = file.read()
                     for k, v in iter(replace.items()):
                         conf = filedat.replace(k, v)
+                
                 elif data['nettype'] == 'borderleaf' or 'border leaf':
                     #Dictionary of words to replace and what to replace them with
                     replace = {'*hostname*': data['hostname'], '*mgmtint*': data['mgmtint'], '*mgmtgateway*': data['mgmtgateway'], '*cvp*': cvp}
@@ -139,6 +150,7 @@ def Configlet(clnt, data, cvp, user, password, template):
                         conf = file.read()
                     for k, v in iter(replace.items()):
                         conf = filedat.replace(k, v)
+                
                 elif data['nettype'] == 'serviceleaf' or 'service leaf':
                     #Dictionary of words to replace and what to replace them with
                     replace = {'*hostname*': data['hostname'], '*mgmtint*': data['mgmtint'], '*mgmtgateway*': data['mgmtgateway'], '*cvp*': cvp}
