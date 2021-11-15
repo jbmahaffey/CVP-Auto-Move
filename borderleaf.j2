@@ -1,7 +1,7 @@
 conf
 hostname {{hostname}}
 interface management{{mgmtint}}
-    ip address {{mgmtip}}
+    ip address {{mgmtip}}/{{mgmtmask}}
 
 ip route 0.0.0.0/0 {{mgmtgateway}}
 

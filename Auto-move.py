@@ -72,8 +72,14 @@ def Main():
     for dev in data['all']:
         if dev['mac'] in undef:
             device = clnt.api.get_device_by_mac(dev['mac'])
+            #Need to determine if the container exist
             try:
-                tsk = clnt.api.deploy_device(device=device, container=dev['container'])
+                ContainerExist(clnt, dev)
+            except:
+                logging.error('Unable to determine if container exist')
+
+            try:
+                tsk = clnt.api.deploy_device(device=device, container=dev['sitenumber'] + '_' + dev['container'])
                 Execute(clnt, tsk['data']['taskIds'])
                 con = Configlet(clnt, dev, args.cvp, args.username, args.password, args.template)
                 
@@ -91,8 +97,44 @@ def Main():
         else:
             logging.info('device ' + str(undef) + ' not approved for deployment or already provisioned.')
 
+#Check if container exist
+def ContainerExist(clnt, data):
+    try:
+        if data['sitename'] != '':
+            site = clnt.api.get_container_by_name(name=data['sitename'])
+            territory = clnt.api.get_container_by_name(name=data['territory'])
+            if site == None:
+                clnt.api.add_container(container_name=data['sitename'], parent_name=territory['name'], parent_key=territory['key'])
+                if data['size'] == 'small':
+                    pkey = clnt.api.get_container_by_name(name=data['sitename'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
+                elif data['size'] == 'medium':
+                    pkey = clnt.api.get_container_by_name(name=data['sitename'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_superspine', parent_name=data['sitename'], parent_key=pkey['key'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_borderleaf', parent_name=data['sitename'], parent_key=pkey['key'])
+                elif data['size'] == 'large':
+                    pkey = clnt.api.get_container_by_name(name=data['sitename'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_superspine', parent_name=data['sitename'], parent_key=pkey['key'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_borderleaf', parent_name=data['sitename'], parent_key=pkey['key'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_spine', parent_name=data['sitename'], parent_key=pkey['key'])
+                elif data['size'] == 'xlarge':
+                    pkey = clnt.api.get_container_by_name(name=data['sitename'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_superspine', parent_name=data['sitename'], parent_key=pkey['key'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_borderleaf', parent_name=data['sitename'], parent_key=pkey['key'])
+                    clnt.api.add_container(container_name=data['sitenumber'] + '_spine', parent_name=data['sitename'], parent_key=pkey['key'])
+                else:
+                    ()
+        else:
+            print('fail')
+    except:
+        logging.info('Error creating containers')
+        return 'Failure'
 
-# Function to create configlet for management
+
+#Create configlet for management or reconcile if switch is not ZTP
 def Configlet(clnt, data, cvp, user, password, template):
     l = []
     try:
