@@ -105,34 +105,72 @@ def ContainerExist(clnt, data):
             territory = clnt.api.get_container_by_name(name=data['territory'])
             if site == None:
                 clnt.api.add_container(container_name=data['sitename'], parent_name=territory['name'], parent_key=territory['key'])
-                if data['size'] == 'small':
-                    pkey = clnt.api.get_container_by_name(name=data['sitename'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
-                elif data['size'] == 'medium':
-                    pkey = clnt.api.get_container_by_name(name=data['sitename'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_superspine', parent_name=data['sitename'], parent_key=pkey['key'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_borderleaf', parent_name=data['sitename'], parent_key=pkey['key'])
-                elif data['size'] == 'large':
-                    pkey = clnt.api.get_container_by_name(name=data['sitename'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_superspine', parent_name=data['sitename'], parent_key=pkey['key'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_borderleaf', parent_name=data['sitename'], parent_key=pkey['key'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_spine', parent_name=data['sitename'], parent_key=pkey['key'])
-                elif data['size'] == 'xlarge':
-                    pkey = clnt.api.get_container_by_name(name=data['sitename'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_superspine', parent_name=data['sitename'], parent_key=pkey['key'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_borderleaf', parent_name=data['sitename'], parent_key=pkey['key'])
-                    clnt.api.add_container(container_name=data['sitenumber'] + '_spine', parent_name=data['sitename'], parent_key=pkey['key'])
-                else:
-                    ()
-        else:
-            print('fail')
+                CreateSubContainers(clnt,data)
+            elif site != None:
+                CreateSubContainers(clnt,data)
     except:
         logging.info('Error creating containers')
         return 'Failure'
 
+#Create sub containers under the sitename depending on size of site
+def CreateSubContainers(clnt, data):
+    try:
+        if data['size'] == 'small':
+            pkey = clnt.api.get_container_by_name(name=data['sitename'])
+            subsiteleaf = clnt.api.get_container_by_name(name=data['sitenumber'] + '_leaf')
+            if subsiteleaf == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
+            else:
+                ()
+        elif data['size'] == 'medium':
+            pkey = clnt.api.get_container_by_name(name=data['sitename'])
+            subsiteleaf = clnt.api.get_container_by_name(name=data['sitenumber'] + '_leaf')
+            subsitesuperspine = clnt.api.get_container_by_name(name=data['sitenumber'] + '_superspine')
+            subsiteborderleaf = clnt.api.get_container_by_name(name=data['sitenumber'] + '_borderleaf')
+            if subsiteleaf == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
+            elif subsitesuperspine == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_superspine', parent_name=data['sitename'], parent_key=pkey['key'])
+            elif subsiteborderleaf == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_borderleaf', parent_name=data['sitename'], parent_key=pkey['key'])
+            else:
+                ()
+        elif data['size'] == 'large':
+            pkey = clnt.api.get_container_by_name(name=data['sitename'])
+            subsiteleaf = clnt.api.get_container_by_name(name=data['sitenumber'] + '_leaf')
+            subsitesuperspine = clnt.api.get_container_by_name(name=data['sitenumber'] + '_superspine')
+            subsiteborderleaf = clnt.api.get_container_by_name(name=data['sitenumber'] + '_borderleaf')
+            subsitespine = clnt.api.get_container_by_name(name=data['sitenumber'] + '_spine')
+            if subsiteleaf == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
+            elif subsitesuperspine == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_superspine', parent_name=data['sitename'], parent_key=pkey['key'])
+            elif subsiteborderleaf == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_borderleaf', parent_name=data['sitename'], parent_key=pkey['key'])
+            elif subsitespine == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_spine', parent_name=data['sitename'], parent_key=pkey['key'])
+            else:
+                ()
+        elif data['size'] == 'xlarge':
+            pkey = clnt.api.get_container_by_name(name=data['sitename'])
+            subsiteleaf = clnt.api.get_container_by_name(name=data['sitenumber'] + '_leaf')
+            subsitesuperspine = clnt.api.get_container_by_name(name=data['sitenumber'] + '_superspine')
+            subsiteborderleaf = clnt.api.get_container_by_name(name=data['sitenumber'] + '_borderleaf')
+            subsitespine = clnt.api.get_container_by_name(name=data['sitenumber'] + '_spine')
+            if subsiteleaf == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_leaf', parent_name=data['sitename'], parent_key=pkey['key'])
+            elif subsitesuperspine == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_superspine', parent_name=data['sitename'], parent_key=pkey['key'])
+            elif subsiteborderleaf == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_borderleaf', parent_name=data['sitename'], parent_key=pkey['key'])
+            elif subsitespine == None:
+                clnt.api.add_container(container_name=data['sitenumber'] + '_spine', parent_name=data['sitename'], parent_key=pkey['key'])
+            else:
+                ()
+        else:
+            ()
+    except:
+        logging.info('Unable to create sub containers for site ' + str(data['sitename']))
 
 #Create configlet for management or reconcile if switch is not ZTP
 def Configlet(clnt, data, cvp, user, password, template):

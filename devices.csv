@@ -1,4 +1,4 @@
-hostname,ztp,mac,territory,sitename,sitenumber,size,container,mgmtip,mgmtmask,mgmtint,mgmtgateway,nettype,p2pint,p2pip,p2pmask,loopback
-Leaf1,true,50:00:00:03:37:66,Canada,canada-otr-029,29,large,leaf,172.17.101.53,24,1,172.17.101.1,leaf,eth1,192.168.101.1,31,lo0
-Leaf2,true,50:00:00:cb:38:c2,US,us-test-001,1,medium,spine,172.17.101.51,24,1,172.17.101.1,leaf,eth1,192.168.101.3,31,lo0
-Leaf3,true,50:00:00:d5:5d:c0,mexico,mexico-test-031,small,leaf,172.17.101.52,24,1,172.17.101.1,leaf,eth1,192.168.101.5,31,lo1
+hostname,ztp,mac,territory,sitename,sitenumber,size,fabric_count,container,mgmtip,mgmtmask,mgmtint,mgmtgateway,nettype,p2pint,p2pip,p2pmask,loopback
+Leaf1,true,50:00:00:03:37:66,Canada,canada-otr-029,29,xlarge,2,leaf,172.17.101.53,24,1,172.17.101.1,leaf,eth1,192.168.101.1,31,lo0
+Leaf2,true,50:00:00:cb:38:c2,US,us-test-001,1,medium,spine,1,172.17.101.51,24,1,172.17.101.1,leaf,eth1,192.168.101.3,31,lo0
+Leaf3,true,50:00:00:d5:5d:c0,mexico,mexico-test-031,small,1,leaf,172.17.101.52,24,1,172.17.101.1,leaf,eth1,192.168.101.5,31,lo1
