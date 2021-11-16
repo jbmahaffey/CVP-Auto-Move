@@ -79,7 +79,10 @@ def Main():
                 logging.error('Unable to determine if container exist')
 
             try:
-                tsk = clnt.api.deploy_device(device=device, container=dev['sitenumber'] + '_' + dev['container'])
+                if dev['size'] == 'xlarge' or dev['size'] == 'xl':
+                    tsk = clnt.api.deploy_device(device=device, container=dev['fabric'] + dev['sitenumber'] + '_' + dev['container'])
+                else:
+                    tsk = clnt.api.deploy_device(device=device, container=dev['sitenumber'] + '_' + dev['container'])
                 Execute(clnt, tsk['data']['taskIds'])
                 con = Configlet(clnt, dev, args.cvp, args.username, args.password, args.template)
                 
@@ -148,17 +151,24 @@ def CreateSubContainers(clnt, data):
             else:
                 ()
         elif data['size'] == 'xlarge':
-            pkey = clnt.api.get_container_by_name(name=data['sitename'])
-            containers = {}
-            containers['_leaf'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_leaf')
-            containers['_superspine'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_superspine')
-            containers['_borderleaf'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_borderleaf')
-            containers['_spine'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_spine')
-            for k, v in iter(containers.items()):
-                if v == None:
-                    clnt.api.add_container(container_name=data['sitenumber'] + k, parent_name=data['sitename'], parent_key=pkey['key'])
-            else:
-                ()
+            count = 1
+            print(count)
+            while count <= int(data['fabric_count']):
+                print('Yay count is ' + str(count))
+                mainkey = clnt.api.get_container_by_name(name=data['sitename'])
+                clnt.api.add_container(container_name='fabric_' + str(count), parent_name=data['sitename'], parent_key=mainkey['key'])
+                pkey = clnt.api.get_container_by_name(name='fabric_' + str(count))
+                containers = {}
+                containers['_leaf'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_leaf')
+                containers['_superspine'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_superspine')
+                containers['_borderleaf'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_borderleaf')
+                containers['_spine'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_spine')
+                for k, v in iter(containers.items()):
+                    if v == None:
+                        clnt.api.add_container(container_name='fabric_'+ str(count) + data['sitenumber'] + k, parent_name=data['sitename'], parent_key=pkey['key'])
+                    else:
+                        ()
+                count += 1
         else:
             ()
     except:
