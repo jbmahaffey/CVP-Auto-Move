@@ -80,11 +80,13 @@ def Main():
 
             try:
                 if dev['size'] == 'xlarge' or dev['size'] == 'xl':
-                    tsk = clnt.api.deploy_device(device=device, container=dev['fabric'] + dev['sitenumber'] + '_' + dev['container'])
+                    tsk = clnt.api.deploy_device(device=device, container=dev['fabric'] + '_' + dev['sitenumber'] + '_' + dev['container'])
                 else:
                     tsk = clnt.api.deploy_device(device=device, container=dev['sitenumber'] + '_' + dev['container'])
+                
                 Execute(clnt, tsk['data']['taskIds'])
                 con = Configlet(clnt, dev, args.cvp, args.username, args.password, args.template)
+                print(con)
                 
                 if con != None and con != 'reconcile':
                     assign = AssignConfiglet(clnt, dev, con)
@@ -152,9 +154,7 @@ def CreateSubContainers(clnt, data):
                 ()
         elif data['size'] == 'xlarge':
             count = 1
-            print(count)
             while count <= int(data['fabric_count']):
-                print('Yay count is ' + str(count))
                 mainkey = clnt.api.get_container_by_name(name=data['sitename'])
                 clnt.api.add_container(container_name='fabric_' + str(count), parent_name=data['sitename'], parent_key=mainkey['key'])
                 pkey = clnt.api.get_container_by_name(name='fabric_' + str(count))
@@ -165,7 +165,7 @@ def CreateSubContainers(clnt, data):
                 containers['_spine'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_spine')
                 for k, v in iter(containers.items()):
                     if v == None:
-                        clnt.api.add_container(container_name='fabric_'+ str(count) + data['sitenumber'] + k, parent_name=data['sitename'], parent_key=pkey['key'])
+                        clnt.api.add_container(container_name='fabric_'+ str(count) + '_' + data['sitenumber'] + k, parent_name=data['sitename'], parent_key=pkey['key'])
                     else:
                         ()
                 count += 1
@@ -188,7 +188,7 @@ def Configlet(clnt, data, cvp, user, password, template):
     
     if data['hostname'] + str('_mgmt') in l:
         logging.info('Configlet ' + str(data['hostname'] + '_mgmt') + ' already exist')
-    elif ztp['ztpMode'] == 'true' or data['ztp'] == 'true':
+    elif ztp['ztpMode'] == 'true' or data['ztp'] == 'true' or data['ztp'] == 'TRUE':
         #Render configuration template to push to cvp as a configlet
         try:
             if template == 'jinja':
@@ -196,16 +196,15 @@ def Configlet(clnt, data, cvp, user, password, template):
                 j2_env = Environment(loader=FileSystemLoader(THIS_DIR),
                          trim_blocks=True)
                 if data['nettype'] == 'leaf':
-                    conf = j2_env.get_template('leaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
-                
+                    conf = j2_env.get_template('leaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtmask = data['mgmtmask'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
                 elif data['nettype'] == 'spine':
-                    conf = j2_env.get_template('spine.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+                    conf = j2_env.get_template('spine.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtmask = data['mgmtmask'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
                 
                 elif data['nettype'] == 'borderleaf' or 'border leaf':
-                    conf = j2_env.get_template('borderleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+                    conf = j2_env.get_template('borderleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtmask = data['mgmtmask'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
                 
                 elif data['nettype'] == 'serviceleaf' or 'service leaf':
-                    conf = j2_env.get_template('serviceleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
+                    conf = j2_env.get_template('serviceleaf.j2').render(hostname = data['hostname'], mgmtint = data['mgmtint'], mgmtip = data['mgmtip'], mgmtmask = data['mgmtmask'], mgmtgateway = data['mgmtgateway'], cvp=cvp)
             
             #Plain text file templates find and replace.  Not the prefered method but an option.
             elif template == 'text' or template == 'txt':
@@ -245,10 +244,11 @@ def Configlet(clnt, data, cvp, user, password, template):
         
         #Push configlet to CVP
         try:
-            cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config=conf)
-            return cfglt
+            clnt.api.add_configlet(name=data['hostname'] + '_cfglt', config=conf)
+            cfgltdata = clnt.api.get_configlet_by_name(name=data['hostname'] + '_cfglt')
+            return cfgltdata
         except:
-            logging.error('Unable to create configlet ' + str(data['hostname'] + '_mgmt'))
+            logging.error('Unable to create configlet ' + str(data['hostname'] + '_cfglt'))
     else:
         try:
             container = clnt.api.get_container_by_name(name=data['container'])
@@ -272,9 +272,10 @@ def AssignConfiglet(clnt, dev, con):
         device = clnt.api.get_device_by_mac(dev['mac'])
     except:
         logging.error('Unable to get device information from Cloudvision')
-    cfglets = [{'name': dev['hostname'] + '_mgmt', 'key': con}]
+    cfglets = [{'name': dev['hostname'] + '_cfglt', 'key': con['key']}]
+    print(cfglets)
     try:
-        task = clnt.api.apply_configlets_to_device(app_name='mgmt_configlet', dev=device, new_configlets=cfglets)
+        task = clnt.api.apply_configlets_to_device(app_name=dev['hostname'] + '_cfglt', dev=device, new_configlets=cfglets)
         return task
     except:
         logging.error('Error applying configlet to device.')
