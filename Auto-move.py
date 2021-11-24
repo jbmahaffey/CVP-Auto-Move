@@ -86,7 +86,6 @@ def Main():
                 
                 Execute(clnt, tsk['data']['taskIds'])
                 con = Configlet(clnt, dev, args.cvp, args.username, args.password, args.template)
-                print(con)
                 
                 if con != None and con != 'reconcile':
                     assign = AssignConfiglet(clnt, dev, con)
@@ -108,11 +107,16 @@ def ContainerExist(clnt, data):
         if data['sitename'] != '':
             site = clnt.api.get_container_by_name(name=data['sitename'])
             territory = clnt.api.get_container_by_name(name=data['territory'])
+            subcontainer = clnt.api.get_container_by_name(name=data['sitenumber'] + '_' + data['nettype'])
             if site == None:
                 clnt.api.add_container(container_name=data['sitename'], parent_name=territory['name'], parent_key=territory['key'])
                 CreateSubContainers(clnt,data)
-            elif site != None:
+            elif site != None and subcontainer == None:
                 CreateSubContainers(clnt,data)
+            elif subcontainer == None:
+                CreateSubContainers(clnt,data)
+            elif subcontainer != None:
+                return 'Containers Exist'
     except:
         logging.info('Error creating parent containers')
         return 'Failure'
@@ -155,19 +159,33 @@ def CreateSubContainers(clnt, data):
         elif data['size'] == 'xlarge':
             count = 1
             while count <= int(data['fabric_count']):
-                mainkey = clnt.api.get_container_by_name(name=data['sitename'])
-                clnt.api.add_container(container_name='fabric_' + str(count), parent_name=data['sitename'], parent_key=mainkey['key'])
-                pkey = clnt.api.get_container_by_name(name='fabric_' + str(count))
-                containers = {}
-                containers['_leaf'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_leaf')
-                containers['_superspine'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_superspine')
-                containers['_borderleaf'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_borderleaf')
-                containers['_spine'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_spine')
-                for k, v in iter(containers.items()):
-                    if v == None:
-                        clnt.api.add_container(container_name='fabric_'+ str(count) + '_' + data['sitenumber'] + k, parent_name=data['sitename'], parent_key=pkey['key'])
-                    else:
-                        ()
+                fabric = clnt.api.get_container_by_name(name='fabric_' + str(count))
+                if fabric == None:
+                    mainkey = clnt.api.get_container_by_name(name=data['sitename'])
+                    clnt.api.add_container(container_name='fabric_' + str(count), parent_name=data['sitename'], parent_key=mainkey['key'])
+                    pkey = clnt.api.get_container_by_name(name='fabric_' + str(count))
+                    containers = {}
+                    containers['_leaf'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_leaf')
+                    containers['_superspine'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_superspine')
+                    containers['_borderleaf'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_borderleaf')
+                    containers['_spine'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_spine')
+                    for k, v in iter(containers.items()):
+                        if v == None:
+                            clnt.api.add_container(container_name='fabric_'+ str(count) + '_' + data['sitenumber'] + k, parent_name=data['sitename'], parent_key=pkey['key'])
+                        else:
+                            ()
+                elif fabric != None:
+                    pkey = clnt.api.get_container_by_name(name='fabric_' + str(count))
+                    containers = {}
+                    containers['_leaf'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_leaf')
+                    containers['_superspine'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_superspine')
+                    containers['_borderleaf'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_borderleaf')
+                    containers['_spine'] = clnt.api.get_container_by_name(name=data['sitenumber'] + '_spine')
+                    for k, v in iter(containers.items()):
+                        if v == None:
+                            clnt.api.add_container(container_name='fabric_'+ str(count) + '_' + data['sitenumber'] + k, parent_name=data['sitename'], parent_key=pkey['key'])
+                        else:
+                            ()
                 count += 1
         else:
             ()
@@ -215,7 +233,6 @@ def Configlet(clnt, data, cvp, user, password, template):
                         conf = file.read()
                     for k, v in iter(replace.items()):
                         conf = conf.replace(k, v)
-                    print(conf)
                 
                 elif data['nettype'] == 'spine':
                     #Dictionary of words to replace and what to replace them with
@@ -245,9 +262,20 @@ def Configlet(clnt, data, cvp, user, password, template):
         
         #Push configlet to CVP
         try:
-            clnt.api.add_configlet(name=data['hostname'] + '_cfglt', config=conf)
-            cfgltdata = clnt.api.get_configlet_by_name(name=data['hostname'] + '_cfglt')
-            return cfgltdata
+            devconf = clnt.api.get_configlet_by_name(name=data['hostname'] + '_cfglt')
+            
+            if devconf == None:
+                clnt.api.add_configlet(name=data['hostname'] + '_cfglt', config=conf)
+                cfgltdata = clnt.api.get_configlet_by_name(name=data['hostname'] + '_cfglt')
+                return cfgltdata
+
+            else:
+                usexisting = input('Configlet ' +  data['hostname'] + '_cfglt already exist Y/N? ')
+                if usexisting == 'y' or usexisting == 'Y' or usexisting == 'yes' or usexisting == 'Yes':
+                    return devconf
+                else:
+                    logging.error('Configlet with the same name already exist and you have selected to not use the existing.  Please delete the existing configlet and try again.')
+                    ()
         except:
             logging.error('Unable to create configlet ' + str(data['hostname'] + '_cfglt'))
     else:
@@ -274,7 +302,6 @@ def AssignConfiglet(clnt, dev, con):
     except:
         logging.error('Unable to get device information from Cloudvision')
     cfglets = [{'name': dev['hostname'] + '_cfglt', 'key': con['key']}]
-    print(cfglets)
     try:
         task = clnt.api.apply_configlets_to_device(app_name=dev['hostname'] + '_cfglt', dev=device, new_configlets=cfglets)
         return task
