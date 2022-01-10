@@ -262,20 +262,19 @@ def Configlet(clnt, data, cvp, user, password, template):
         
         #Push configlet to CVP
         try:
-            devconf = clnt.api.get_configlet_by_name(name=data['hostname'] + '_cfglt')
-            
-            if devconf == None:
-                clnt.api.add_configlet(name=data['hostname'] + '_cfglt', config=conf)
-                cfgltdata = clnt.api.get_configlet_by_name(name=data['hostname'] + '_cfglt')
-                return cfgltdata
-
-            else:
+            if data['hostname'] + '_cfglt' in l:
+                devconf = clnt.api.get_configlet_by_name(name=data['hostname'] + '_cfglt')
                 usexisting = input('Configlet ' +  data['hostname'] + '_cfglt already exist Y/N? ')
                 if usexisting == 'y' or usexisting == 'Y' or usexisting == 'yes' or usexisting == 'Yes':
                     return devconf
                 else:
                     logging.error('Configlet with the same name already exist and you have selected to not use the existing.  Please delete the existing configlet and try again.')
                     ()
+
+            else:
+                clnt.api.add_configlet(name=data['hostname'] + '_cfglt', config=conf)
+                cfgltdata = clnt.api.get_configlet_by_name(name=data['hostname'] + '_cfglt')
+                return cfgltdata
         except:
             logging.error('Unable to create configlet ' + str(data['hostname'] + '_cfglt'))
     else:
