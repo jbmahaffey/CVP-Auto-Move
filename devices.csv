@@ -1,4 +1,4 @@
 hostname,ztp,mac,territory,sitename,sitenumber,size,fabric_count,fabric,container,mgmtip,mgmtmask,mgmtint,mgmtgateway,nettype,p2pint,p2pip,p2pmask,loopback
-Leaf1,TRUE,50:00:00:03:37:66,Canada,canada-otr-029,29,xlarge,2,fabric_1,leaf,172.17.101.53,/24,1,172.17.101.1,leaf,eth1,192.168.101.1,/31,lo0
+Leaf1,TRUE,50:00:00:be:a1:e3,Canada,canada-otr-029,29,xlarge,2,fabric_1,leaf,172.17.101.53,/24,1,172.17.101.1,leaf,eth1,192.168.101.1,/31,lo0
 Leaf2,TRUE,50:00:00:cb:38:c2,US,us-test-001,01,medium,1,,spine,172.17.101.51,/24,1,172.17.101.1,leaf,eth1,192.168.101.3,/31,lo0
-Leaf3,TRUE,50:00:00:d5:5d:c0,mexico,mexico-test-031,031,small,1,,leaf,172.17.101.52,/24,1,172.17.101.1,leaf,eth1,192.168.101.5,/31,lo0
+Leaf3,TRUE,50:00:00:d5:5d:c1,mexico,mexico-test-031,031,small,1,,leaf,172.17.101.52,/24,1,172.17.101.1,leaf,eth1,192.168.101.5,/31,lo0
