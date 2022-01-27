@@ -11,7 +11,7 @@ import ssl
 import logging
 ssl._create_default_https_context = ssl._create_unverified_context
 
-def Main():
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--cvp', default='192.168.101.26', help='CVP Server IP')
     parser.add_argument('--username', default='cvpadmin', help='CVP username')
@@ -26,7 +26,12 @@ def Main():
         formattedlevel = logginglevel.upper()
 
         # Open logfile
-        logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',filename='cvpmove.log', level=formattedlevel, datefmt='%Y-%m-%d %H:%M:%S')
+        logging.basicConfig(
+            format='%(asctime)s %(levelname)-8s %(message)s',
+            filename='cvpmove.log', 
+            level=formattedlevel, 
+            datefmt='%Y-%m-%d %H:%M:%S',
+        )
     else:
         ()
         
@@ -46,15 +51,17 @@ def Main():
         logging.info('Please enter a valid file type.')
 
     # CVPRAC connect to CVP
-    clnt = CvpClient()
+    client = CvpClient()
     try:
-        clnt.connect(nodes=[args.cvp], username=args.username, password=args.password)
+        client.connect(
+            nodes=[args.cvp], username=args.username, password=args.password,
+        )
     except:
         logging.error('Unable to login to Cloudvision')
 
     # Get devices from Undefined container in CVP and add their MAC to a list
     try:
-        undefined = clnt.api.get_devices_in_container('Undefined')
+        undefined = client.api.get_devices_in_container('Undefined')
     except:
         logging.error('Unable to get devices from Cloudvision.')
 
@@ -62,100 +69,160 @@ def Main():
     for unprov in undefined:
         undef.append(unprov['systemMacAddress'])
 
-    # Compare list of devices in CVP undefined container to list of approved devices defined in YAML file
-    # If the the device is defined in the YAML file then provision it to the proper container
+    # Compare list of devices in CVP undefined container to list of approved
+    # devices defined in YAML file If the the device is defined in the YAML file
+    # then provision it to the proper container
     for dev in data['all']:
         if dev['mac'] in undef:
-            device = clnt.api.get_device_by_mac(dev['mac'])
+            device = client.api.get_device_by_mac(dev['mac'])
             try:
-                tsk = clnt.api.deploy_device(device=device, container=dev['container'])
-                Execute(clnt, tsk['data']['taskIds'])
-                con = Configlet(clnt, dev, args.cvp, args.username, args.password)
+                tsk = client.api.deploy_device(
+                    device=device, container=dev['container'],
+                )
+                execute(client, tsk['data']['taskIds'])
+                con = configlet(
+                    client, dev, args.cvp, args.username, args.password,
+                )
                 if con != None and con != 'reconcile':
-                    assign = AssignConfiglet(clnt, dev, con)
-                    Execute(clnt, assign['data']['taskIds'])
+                    assign = assign_configlet(client, dev, con)
+                    execute(client, assign['data']['taskIds'])
                 elif con == 'reconcile':
-                    cfglets = Containercfg(clnt, dev)
-                    Execute(clnt, cfglets['data']['taskIds'])
+                    cfglets = container_cfg(client, dev)
+                    execute(client, cfglets['data']['taskIds'])
                 else:
                     ()
             except:
                 logging.error('Unable to deploy device.')
         else:
-            logging.info('device ' + str(undef) + ' not approved for deployment or already provisioned.')
+            logging.info(
+                f'device {undef} not approved for deployment or already'
+                ' provisioned.'
+            )
 
 
-# Function to create configlet for management
-def Configlet(clnt, data, cvp, user, password):
-    l = []
+configlet_template = '''\
+hostname {hostname}
+interface management1
+ip address {ip}/24
+no shut
+ip route 0.0.0.0/0 {mgmtgateway}
+daemon TerminAttr
+exec /usr/bin/TerminAttr -ingestgrpcurl=192.168.101.26:9910\
+  -cvcompression=gzip -ingestauth=key,arista\
+  -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata\
+  -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent\
+  -ingestvrf=default -taillogs
+no shut\
+'''
+
+def configlet(client, data, cvp, user, password):
+    '''Function to create configlet for management
+
+    '''
+    configlet_names = []
     try:
-        config = clnt.api.get_configlets(start=0, end=0)
-        ztp = clnt.api.get_device_by_mac(data['mac'])
+        config = client.api.get_configlets(start=0, end=0)
+        ztp = client.api.get_device_by_mac(data['mac'])
     except:
         logging.error('Unable to get list of configlets.')
 
     for configlet in config['data']:
-        l.append(configlet['name'])
+        configlet_names.append(configlet['name'])
     
-    if data['hostname'] + str('_mgmt') in l:
-        logging.info('Configlet ' + str(data['hostname'] + '_mgmt') + ' already exist')
+    configlet_name = f"{data['hostname']}_mgmt"
+    if configlet_name in configlet_names:
+        logging.info(f'configlet {configlet_name} already exist')
     elif ztp['ztpMode'] == 'true':
         try:
-            cfglt = clnt.api.add_configlet(name=data['hostname'] + str('_mgmt'), config='hostname ' + str(data['hostname']) + '\ninterface management1\nip address ' + 
-                                            str(data['ip']) + '/24\nno shut\nip route 0.0.0.0/0 ' + str(data['mgmtgateway']) + 
-                                            '\ndaemon TerminAttr\nexec /usr/bin/TerminAttr -ingestgrpcurl=192.168.101.26:9910 -cvcompression=gzip -ingestauth=key,arista -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default -taillogs\nno shut')
+            cfglt = client.api.add_configlet(
+                name=configlet_name, config=configlet_template.format(**data),
+            )
             return cfglt
         except:
-            logging.error('Unable to create configlet ' + str(data['hostname'] + '_mgmt'))
+            logging.error(
+                f'Unable to create configlet {configlet_name}'
+            )
     else:
         try:
-            container = clnt.api.get_container_by_name(name=data['container'])
+            container = client.api.get_container_by_name(name=data['container'])
             ckey = container['key']
-            login = 'https://{server}/cvpservice/login/authenticate.do'.format(server=cvp)
-            resp = requests.post(login, headers={'content-type': 'application/json'}, json={'userId': user, 'password': password}, verify=False)
+
+            login = f'https://{cvp}/cvpservice/login/authenticate.do'
+            resp = requests.post(
+                login, 
+                headers={'content-type': 'application/json'},
+                json={'userId': user, 'password': password}, 
+                verify=False,
+            )
+
             jresp = resp.json()
             token = jresp['cookie']['Value']
-            url = 'https://{server}/cvpservice/provisioning/containerLevelReconcile.do?containerId={container}&reconcileAll=false'.format(server=cvp, container=ckey)
-            response = requests.get(url, auth=(user, password), headers={'Cookie': 'access_token=' + str(token)}, verify=False)
+
+            url = (
+                f'https://{cvp}/cvpservice/provisioning/'
+                'containerLevelReconcile.do'
+                f'?containerId={ckey}&reconcileAll=false'
+            )
+            response = requests.get(
+                url, 
+                auth=(user, password), 
+                headers={'Cookie': f'access_token={token}'}, 
+                verify=False,
+            )
+
+            output = None
             if response.status_code == 200:
-                reconcile = 'reconcile'
-            return reconcile
+                output = 'reconcile'
+            return output
         except:
             logging.error('Unable to reconcile container.')
 
 
-# function to assign configlet to new device
-def AssignConfiglet(clnt, dev, con):
+def assign_configlet(client, dev, con):
+    '''Function to assign configlet to new device
+
+    '''
     try:
-        device = clnt.api.get_device_by_mac(dev['mac'])
+        device = client.api.get_device_by_mac(dev['mac'])
     except:
         logging.error('Unable to get device information from Cloudvision')
-    cfglets = [{'name': dev['hostname'] + '_mgmt', 'key': con}]
+
+    cfglets = [{'name': f"{dev['hostname']}_mgmt", 'key': con}]
     try:
-        task = clnt.api.apply_configlets_to_device(app_name='mgmt_configlet', dev=device, new_configlets=cfglets)
+        task = client.api.apply_configlets_to_device(
+            app_name='mgmt_configlet', dev=device, new_configlets=cfglets,
+        )
         return task
     except:
         logging.error('Error applying configlet to device.')
 
 
-def Containercfg(clnt, data):
-    cfglets = clnt.api.get_configlets_by_device_id(data['mac'])
-    cfglist = []
+def container_cfg(client, data):
+    cfglets = client.api.get_configlets_by_device_id(data['mac'])
+
+    cfg_list = []
     for configlet in cfglets:
-        cfglist.append({'name': configlet['name'], 'key': configlet['key']})
-    device = clnt.api.get_device_by_mac(data['mac'])
-    task = clnt.api.apply_configlets_to_device(app_name='container_configlet', dev=device, new_configlets=cfglist)
+        cfg_list.append({'name': configlet['name'], 'key': configlet['key']})
+
+    device = client.api.get_device_by_mac(data['mac'])
+    task = client.api.apply_configlets_to_device(
+        app_name='container_configlet', dev=device, new_configlets=cfg_list,
+    )
     return task
 
 
-# Function to run task if they are for the devices we provisioned
-def Execute(clnt, tasks):
+def execute(client, tasks):
+    '''Function to run task if they are for the devices we provisioned
+
+    '''
     for task in tasks:
         try:
-            clnt.api.execute_task(task_id=task)
+            client.api.execute_task(task_id=task)
         except:
-            logging.info('Task ID ' + str(task) + ' is ' + ' failed to execute.')
+            logging.info(
+                f'Task ID {task} is failed to execute.'
+            )
     
 
 if __name__ == '__main__':
-   Main()
+   main()
