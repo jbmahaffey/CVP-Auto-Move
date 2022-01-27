@@ -119,7 +119,7 @@ def configlet(client, data, cvp, user, password):
     '''Function to create configlet for management
 
     '''
-    l = []
+    configlet_names = []
     try:
         config = client.api.get_configlets(start=0, end=0)
         ztp = client.api.get_device_by_mac(data['mac'])
@@ -127,20 +127,20 @@ def configlet(client, data, cvp, user, password):
         logging.error('Unable to get list of configlets.')
 
     for configlet in config['data']:
-        l.append(configlet['name'])
+        configlet_names.append(configlet['name'])
     
-    if data['hostname'] + str('_mgmt') in l:
-        logging.info(f'configlet {data["hostname"]} mgmt already exist')
+    configlet_name = f"{data['hostname']}_mgmt"
+    if configlet_name in configlet_names:
+        logging.info(f'configlet {configlet_name} already exist')
     elif ztp['ztpMode'] == 'true':
         try:
             cfglt = client.api.add_configlet(
-                name=f"{data['hostname']}_mgmt", 
-                config=configlet_template.format(**data),
+                name=configlet_name, config=configlet_template.format(**data),
             )
             return cfglt
         except:
             logging.error(
-                f'Unable to create configlet {data["hostname"]}_mgmt'
+                f'Unable to create configlet {configlet_name}'
             )
     else:
         try:
@@ -187,7 +187,7 @@ def assign_configlet(client, dev, con):
     except:
         logging.error('Unable to get device information from Cloudvision')
 
-    cfglets = [{'name': f"{dev['hostname']} mgmt", 'key': con}]
+    cfglets = [{'name': f"{dev['hostname']}_mgmt", 'key': con}]
     try:
         task = client.api.apply_configlets_to_device(
             app_name='mgmt_configlet', dev=device, new_configlets=cfglets,
