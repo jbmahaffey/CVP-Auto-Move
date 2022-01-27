@@ -147,9 +147,7 @@ def configlet(client, data, cvp, user, password):
             container = client.api.get_container_by_name(name=data['container'])
             ckey = container['key']
 
-            login = (
-                f'https://{cvp}/cvpservice/login/authenticate.do'
-            )
+            login = f'https://{cvp}/cvpservice/login/authenticate.do'
             resp = requests.post(
                 login, 
                 headers={'content-type': 'application/json'},
@@ -171,9 +169,11 @@ def configlet(client, data, cvp, user, password):
                 headers={'Cookie': f'access_token={token}'}, 
                 verify=False,
             )
+
+            output = None
             if response.status_code == 200:
-                reconcile = 'reconcile'
-            return reconcile
+                output = 'reconcile'
+            return output
         except:
             logging.error('Unable to reconcile container.')
 
